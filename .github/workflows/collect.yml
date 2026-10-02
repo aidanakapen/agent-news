@@ -1,0 +1,67 @@
+name: Сбор новостей
+
+on:
+  schedule:
+    # 9:00, 14:00 и 19:00 по Астане (UTC+5). GitHub может задержать запуск на 5–20 минут.
+    - cron: "0 4,9,14 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Подготовить ветку data
+        run: |
+          git config --global user.name "news-agent"
+          git config --global user.email "news-agent@users.noreply.github.com"
+          if git fetch --depth=1 origin data:data; then
+            git worktree add store data
+          else
+            git worktree add --detach store
+            cd store
+            git checkout --orphan data
+            git rm -rf --quiet .
+            cd ..
+          fi
+
+      - name: Собрать посты и подготовить черновики
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          DATA_DIR: store
+        run: node agent/run.mjs
+
+      - name: Сохранить выпуск в ветку data
+        working-directory: store
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Изменений нет"
+            exit 0
+          fi
+          git commit -m "Выпуск $(TZ=Asia/Almaty date '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do
+            if git ls-remote --exit-code --heads origin data >/dev/null; then
+              git pull --rebase origin data || { git rebase --abort; exit 1; }
+            fi
+            git push origin data && exit 0
+            sleep 5
+          done
+          exit 1

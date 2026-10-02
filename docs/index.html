@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Сводка ведомств</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,500;7..72,600&display=swap">
+<style>
+:root {
+  --bg: #f3f6f5;
+  --surface: #ffffff;
+  --surface-2: #eaf0ee;
+  --ink: #14201c;
+  --muted: #5a6a64;
+  --line: #d6dfdb;
+  --accent: #0c6b61;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcefeb;
+  --urgent: #b8321f;
+  --urgent-soft: #fbe7e3;
+  --ok: #2c7a3a;
+  --ok-soft: #e1f2e3;
+  --no: #7d8682;
+  --no-soft: #eceeed;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d9;
+  --focus: #0c6b61;
+  --shadow: 0 1px 2px rgba(20, 32, 28, .06), 0 4px 16px rgba(20, 32, 28, .05);
+  --f-display: "Literata", "PT Serif", Georgia, serif;
+  --f-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1412; --surface: #151d1a; --surface-2: #1c2622; --ink: #e3ebe8; --muted: #93a39d; --line: #2a3632;
+    --accent: #3fb3a3; --accent-ink: #062320; --accent-soft: #173431; --urgent: #ff7d66; --urgent-soft: #3a1c17;
+    --ok: #74c983; --ok-soft: #183020; --no: #8e9794; --no-soft: #222a27; --warn: #e8b552; --warn-soft: #33290f;
+    --focus: #3fb3a3; --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1412; --surface: #151d1a; --surface-2: #1c2622; --ink: #e3ebe8; --muted: #93a39d; --line: #2a3632;
+  --accent: #3fb3a3; --accent-ink: #062320; --accent-soft: #173431; --urgent: #ff7d66; --urgent-soft: #3a1c17;
+  --ok: #74c983; --ok-soft: #183020; --no: #8e9794; --no-soft: #222a27; --warn: #e8b552; --warn-soft: #33290f;
+  --focus: #3fb3a3; --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-ui);
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+a { color: var(--accent); }
+
+.wrap { max-width: 880px; margin: 0 auto; padding-inline: 16px; }
+
+/* шапка */
+.top { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+.top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-block: 12px; }
+.brand { display: flex; flex-direction: column; margin-right: auto; }
+.brand b { font: 600 20px/1.2 var(--f-display); letter-spacing: -.01em; }
+.brand span { font-size: 12px; color: var(--muted); }
+.run { font: 12px/1.4 var(--f-mono); color: var(--muted); text-align: right; }
+.icon-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+.icon-btn:hover { background: var(--surface-2); }
+
+/* панель управления */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-block: 16px 8px; }
+.controls select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 10px; max-width: 100%; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: 14px; }
+.tab[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab .n { font-family: var(--f-mono); font-size: 12px; opacity: .75; margin-left: 4px; }
+
+.banner { border-radius: 10px; padding: 12px 14px; margin-block: 8px; font-size: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.banner.demo { background: var(--warn-soft); color: var(--warn); }
+.banner.err { background: var(--urgent-soft); color: var(--urgent); }
+.banner button { margin-left: auto; }
+
+/* карточка новости */
+.list { display: flex; flex-direction: column; gap: 14px; padding-block: 8px 48px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.card.is-urgent { border-color: var(--urgent); }
+.urgent-strip { background: var(--urgent); color: #fff; font: 600 12px/1 var(--f-ui); letter-spacing: .08em; text-transform: uppercase; padding: 7px 16px; }
+.card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 14px 16px 0; font-size: 13px; color: var(--muted); }
+.card-head .agency { color: var(--ink); font-weight: 500; }
+.card-head time { font-family: var(--f-mono); font-size: 12px; }
+.topic { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.langs { margin-left: auto; display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.langs button { border: 0; background: transparent; padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.langs button + button { border-left: 1px solid var(--line); }
+.langs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); border: 1px solid var(--muted); }
+.dot.approved { background: var(--ok); border-color: var(--ok); }
+.dot.rejected { background: transparent; border-color: var(--no); position: relative; }
+.dot.rejected::after { content: ""; position: absolute; left: -1px; right: -1px; top: 3px; height: 1px; background: var(--no); transform: rotate(45deg); }
+
+.body { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+.flags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 0; }
+.flag { font-size: 12px; border-radius: 6px; padding: 2px 8px; }
+.flag.tr { background: var(--warn-soft); color: var(--warn); }
+.flag.st-approved { background: var(--ok-soft); color: var(--ok); }
+.flag.st-rejected { background: var(--no-soft); color: var(--no); }
+.flag.st-new { background: var(--accent-soft); color: var(--accent); }
+textarea { width: 100%; border: 1px solid transparent; border-radius: 8px; background: transparent; resize: none; overflow: hidden; padding: 6px 8px; margin-inline: -8px; width: calc(100% + 16px); }
+textarea:hover { border-color: var(--line); }
+textarea:focus { border-color: var(--accent); background: var(--surface-2); outline: none; }
+textarea.title { font: 600 22px/1.3 var(--f-display); letter-spacing: -.01em; text-wrap: balance; }
+textarea.text { font: 16px/1.6 var(--f-ui); max-width: 70ch; }
+.card.is-rejected textarea { color: var(--muted); }
+.source { font-size: 13px; color: var(--muted); }
+.source a { word-break: break-all; }
+.reason { font-size: 13px; color: var(--muted); font-style: italic; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 14px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+.btn.ghost { background: transparent; }
+.btn.done { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.spacer { flex: 1; }
+
+.empty { text-align: center; color: var(--muted); padding: 48px 16px; }
+.empty b { display: block; font: 600 20px/1.3 var(--f-display); color: var(--ink); margin-bottom: 6px; }
+
+/* настройки */
+dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 0; width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
+dialog::backdrop { background: rgba(10, 16, 14, .45); }
+.dlg-head { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.dlg-head b { font: 600 19px/1.2 var(--f-display); margin-right: auto; }
+.dlg-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 18px; }
+fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+legend { font-weight: 600; margin-bottom: 4px; padding: 0; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+label.f input { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface); color: var(--ink); font-size: 15px; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.ch-table-wrap { overflow-x: auto; }
+.ch-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ch-table td { border-bottom: 1px solid var(--line); padding: 7px 6px; vertical-align: middle; }
+.ch-table td.h { font-family: var(--f-mono); font-size: 13px; }
+.ch-table .unconf { color: var(--warn); font-size: 12px; display: block; }
+.ch-add { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ch-add input { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--surface); min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: 14px; z-index: 20; max-width: calc(100vw - 32px); }
+.save-state { font: 12px var(--f-mono); color: var(--muted); }
+.save-state.err { color: var(--urgent); }
+
+@media (max-width: 560px) {
+  .langs { margin-left: 0; }
+  textarea.title { font-size: 19px; }
+  .run { text-align: left; }
+  .ch-add { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <b>Сводка ведомств</b>
+      <span>Черновики из Telegram-каналов госорганов РК</span>
+    </div>
+    <div class="run" id="runInfo"></div>
+    <span class="save-state" id="saveState"></span>
+    <button class="icon-btn" id="openSettings" type="button">Настройки</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banners"></div>
+  <div class="controls">
+    <select id="issueSelect" aria-label="Выпуск"></select>
+    <div class="tabs" id="filterTabs" role="group" aria-label="Фильтр по статусу"></div>
+  </div>
+  <div class="list" id="list"></div>
+</main>
+
+<dialog id="settings">
+  <div class="dlg-head"><b>Настройки</b><button class="icon-btn" type="button" id="closeSettings">Закрыть</button></div>
+  <div class="dlg-body">
+    <fieldset>
+      <legend>Доступ к репозиторию</legend>
+      <label class="f">Репозиторий (владелец/название)
+        <input id="setRepo" placeholder="aidanakapen/agent-news" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="f">Токен GitHub
+        <input id="setToken" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+      </label>
+      <p class="hint">Токен хранится только в этом браузере. Нужен fine-grained токен с доступом к этому репозиторию: Contents — Read and write, Actions — Read and write.</p>
+      <div class="row"><button class="btn primary" type="button" id="saveSettings">Сохранить и загрузить</button></div>
+    </fieldset>
+    <fieldset id="channelsBox">
+      <legend>Каналы</legend>
+      <p class="hint">Агент читает только включённые каналы. Изменения применяются со следующего сбора.</p>
+      <div class="ch-table-wrap"><table class="ch-table"><tbody id="chRows"></tbody></table></div>
+      <div class="ch-add">
+        <input id="chHandle" placeholder="Канал, например KZgovernment" spellcheck="false">
+        <input id="chAgency" placeholder="Ведомство по-русски">
+        <input id="chAgencyKz" placeholder="Ведомство по-казахски">
+        <button class="btn" type="button" id="chAdd">Добавить канал</button>
+      </div>
+      <div class="row"><button class="btn primary" type="button" id="chSave">Сохранить список каналов</button></div>
+    </fieldset>
+    <fieldset>
+      <legend>Сбор вне расписания</legend>
+      <p class="hint">Обычно агент собирает новости в 9:00, 14:00 и 19:00 по Астане. Новый выпуск появится здесь через 3–10 минут.</p>
+      <div class="row"><button class="btn" type="button" id="runNow">Собрать сейчас</button></div>
+    </fieldset>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const BRANCH = "data";
+  const TOPICS = { law: "Законодательство", people: "Касается людей", emergency: "ЧС", government: "Правительство" };
+  const STATUS = { new: "Ждёт проверки", approved: "Утверждено", rejected: "Отклонено" };
+  const LANGS = { ru: "RU", kz: "KZ" };
+  const FILTERS = [["pending", "Ждут проверки"], ["approved", "Утверждено"], ["rejected", "Отклонено"], ["all", "Все"]];
+
+  const $ = (id) => document.getElementById(id);
+  function h(tag, attrs = {}, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v;
+      else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      else if (k === "text") el.textContent = v;
+      else el.setAttribute(k, v === true ? "" : v);
+    }
+    for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid);
+    return el;
+  }
+
+  // ---------- хранилище настроек (только этот браузер) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("svodka." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("svodka." + k, JSON.stringify(v)); } catch {} },
+  };
+  function guessRepo() {
+    const m = location.hostname.match(/^([^.]+)\.github\.io$/);
+    const seg = location.pathname.split("/").filter(Boolean)[0];
+    return m && seg ? `${m[1]}/${seg}` : "";
+  }
+
+  const state = {
+    repo: store.get("repo", "") || guessRepo(),
+    token: store.get("token", ""),
+    demo: false,
+    issues: [],          // [{id, sha, path, data}]
+    channels: null, channelsSha: null,
+    lastRun: null,
+    issueSel: store.get("issueSel", "latest"),
+    filter: store.get("filter", "pending"),
+    lang: {},            // newsId -> "ru" | "kz"
+    dirty: new Map(),    // issueId -> Set("newsId|lang")
+    saving: false,
+    error: "",
+  };
+
+  // ---------- GitHub API ----------
+  const b64encode = (str) => {
+    const bytes = new TextEncoder().encode(str);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  };
+  const b64decode = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, "")), (c) => c.charCodeAt(0)));
+
+  async function gh(path, opts = {}) {
+    const res = await fetch(`https://api.github.com/repos/${state.repo}${path}`, {
+      ...opts,
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${state.token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        ...(opts.body ? { "Content-Type": "application/json" } : {}),
+      },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const err = new Error(`GitHub ${res.status}`);
+      err.status = res.status;
+      try { err.detail = (await res.json()).message; } catch {}
+      throw err;
+    }
+    return res.status === 204 ? null : res.json();
+  }
+  async function readFile(path) {
+    const f = await gh(`/contents/${path}?ref=${BRANCH}`);
+    return { sha: f.sha, data: JSON.parse(b64decode(f.content)) };
+  }
+  async function writeFile(path, data, sha, message) {
+    const r = await gh(`/contents/${path}`, {
+      method: "PUT",
+      body: JSON.stringify({ message, branch: BRANCH, sha: sha || undefined, content: b64encode(JSON.stringify(data, null, 2) + "\n") }),
+    });
+    return r.content.sha;
+  }
+  function explain(e) {
+    if (e.status === 401) return "GitHub не принял токен. Проверьте его в настройках.";
+    if (e.status === 403) return "У токена не хватает прав. Нужны Contents и Actions — Read and write.";
+    if (e.status === 404) return "Репозиторий или ветка data не найдены. Проверьте название репозитория и что агент уже запускался хотя бы раз.";
+    return `Ошибка GitHub: ${e.detail || e.message}`;
+  }
+
+  // ---------- загрузка ----------
+  async function load() {
+    state.error = "";
+    if (!state.repo || !state.token) { loadDemo(); return; }
+    state.demo = false;
+    $("list").replaceChildren(h("div", { class: "empty", text: "Загружаю выпуски…" }));
+    try {
+      const listing = await gh(`/contents/issues?ref=${BRANCH}`).catch((e) => { if (e.status === 404) return []; throw e; });
+      const files = listing.filter((f) => f.name.endsWith(".json")).sort((a, b) => b.name.localeCompare(a.name)).slice(0, 12);
+      state.issues = await Promise.all(files.map(async (f) => ({ id: f.name.replace(/\.json$/, ""), path: f.path, ...(await readFile(f.path)) })));
+      const [ch, st] = await Promise.all([
+        readFile("channels.json").catch(() => null),
+        readFile("state.json").catch(() => null),
+      ]);
+      state.channels = ch?.data ?? null; state.channelsSha = ch?.sha ?? null;
+      state.lastRun = st?.data?.lastRun ?? null;
+    } catch (e) {
+      state.error = explain(e);
+      state.issues = [];
+    }
+    render();
+  }
+
+  function loadDemo() {
+    state.demo = true;
+    const today = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10);
+    state.issues = [{
+      id: `${today}-0900`, sha: null, path: null,
+      data: { id: `${today}-0900`, day: today, time: "09:00", news: [
+        { id: "demo-1", urgent: true, topic: "emergency", reason: "Предупреждение о погоде для нескольких регионов.", agency: "Министерство по чрезвычайным ситуациям", agencyKz: "Төтенше жағдайлар министрлігі", channel: "qr_tjm", postDate: new Date().toISOString(), sources: [{ ref: "qr_tjm/1", url: "https://t.me/qr_tjm" }],
+          ru: { title: "Пример: штормовое предупреждение в трёх областях", text: "Это пример карточки. Настоящие черновики появятся после настройки и первого сбора.\n\nСрочные сообщения о ЧС всегда стоят наверху и отмечены красной полосой.\n\nТекст правится прямо здесь: нажмите на абзац и печатайте.", translated: false, status: "new", sourceUrl: "https://t.me/qr_tjm" },
+          kz: { title: "Мысал: үш облыста дауыл туралы ескерту", text: "Бұл — мысал карточка. Нақты жобалар баптаудан және алғашқы жинаудан кейін пайда болады.\n\nТЖ туралы шұғыл хабарлар әрдайым жоғарыда тұрады.\n\nМәтінді осы жерде түзетуге болады.", translated: true, status: "new", sourceUrl: "https://t.me/qr_tjm" } },
+        { id: "demo-2", urgent: false, topic: "people", reason: "Меняется порядок, который касается многих семей.", agency: "Правительство РК", agencyKz: "ҚР Үкіметі", channel: "KZgovernment", postDate: new Date().toISOString(), sources: [{ ref: "KZgovernment/1", url: "https://t.me/KZgovernment" }],
+          ru: { title: "Пример: утверждённая новость", text: "У каждой языковой версии свой статус. Здесь русская версия уже утверждена.\n\nКнопки внизу копируют заголовок и текст отдельно — в WordPress это разные поля.\n\nК тексту при копировании добавляется строка с источником.", translated: false, status: "approved", sourceUrl: "https://t.me/KZgovernment" },
+          kz: { title: "Мысал: бекітілген жаңалық", text: "Әр тілдік нұсқаның өз мәртебесі бар.\n\nТөмендегі батырмалар тақырып пен мәтінді бөлек көшіреді.\n\nМәтінге дереккөз жолы қосылады.", translated: false, status: "new", sourceUrl: "https://t.me/KZgovernment" } },
+      ] },
+    }];
+    state.channels = null; state.lastRun = null;
+    render();
+  }
+
+  // ---------- сохранение ----------
+  let saveTimer = null;
+  function markDirty(issueId, newsId, lang) {
+    if (state.demo) return;
+    if (!state.dirty.has(issueId)) state.dirty.set(issueId, new Set());
+    state.dirty.get(issueId).add(`${newsId}|${lang}`);
+    setSaveState("Есть несохранённые правки");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, 2500);
+  }
+  async function flush() {
+    saveTimer = null;
+    if (state.saving || !state.dirty.size) return;
+    state.saving = true;
+    setSaveState("Сохраняю…");
+    const batch = state.dirty; state.dirty = new Map();
+    try {
+      for (const [issueId, keys] of batch) {
+        const issue = state.issues.find((i) => i.id === issueId);
+        try {
+          issue.sha = await writeFile(issue.path, issue.data, issue.sha, `Редактор: правки в выпуске ${issueId}`);
+        } catch (e) {
+          if (e.status !== 409 && e.status !== 422) throw e;
+          // файл изменился на сервере — берём свежую версию и переносим свои правки
+          const fresh = await readFile(issue.path);
+          for (const key of keys) {
+            const [newsId, lang] = key.split("|");
+            const mine = issue.data.news.find((n) => n.id === newsId);
+            const theirs = fresh.data.news.find((n) => n.id === newsId);
+            if (mine && theirs) theirs[lang] = mine[lang];
+          }
+          issue.data = fresh.data;
+          issue.sha = await writeFile(issue.path, issue.data, fresh.sha, `Редактор: правки в выпуске ${issueId}`);
+        }
+      }
+      const t = new Date();
+      setSaveState(`Сохранено в ${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`);
+    } catch (e) {
+      for (const [k, v] of batch) { if (!state.dirty.has(k)) state.dirty.set(k, new Set()); v.forEach((x) => state.dirty.get(k).add(x)); }
+      setSaveState("Не сохранено. " + explain(e), true);
+      clearTimeout(saveTimer); saveTimer = setTimeout(flush, 15000);
+    } finally {
+      state.saving = false;
+      if (state.dirty.size && !saveTimer) saveTimer = setTimeout(flush, 2500);
+    }
+  }
+  function setSaveState(text, err) { const el = $("saveState"); el.textContent = text; el.classList.toggle("err", !!err); }
+  window.addEventListener("beforeunload", (e) => { if (state.dirty.size || state.saving) { e.preventDefault(); e.returnValue = ""; } });
+
+  // ---------- вспомогательное ----------
+  function fmtDate(iso, withTime = true) {
+    if (!iso) return "";
+    const d = new Date(new Date(iso).getTime() + 5 * 3600e3);
+    const p = (n) => String(n).padStart(2, "0");
+    const date = `${p(d.getUTCDate())}.${p(d.getUTCMonth() + 1)}.${d.getUTCFullYear()}`;
+    return withTime ? `${date}, ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}` : date;
+  }
+  const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+  function issueLabel(issue) {
+    const [y, m, d] = (issue.data.day || issue.id.slice(0, 10)).split("-");
+    const n = issue.data.news.length;
+    return `${+d} ${MONTHS[+m - 1]}, ${issue.data.time || ""} · ${n} ${plural(n, "новость", "новости", "новостей")}`;
+  }
+  function plural(n, one, few, many) {
+    const a = n % 10, b = n % 100;
+    return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many;
+  }
+  function sourceLine(news, lang) {
+    const v = news[lang];
+    const date = fmtDate(news.postDate, false);
+    return lang === "kz"
+      ? `Дереккөз: ${news.agencyKz || news.agency}, ${date}, ${v.sourceUrl}`
+      : `Источник: ${news.agency}, ${date}, ${v.sourceUrl}`;
+  }
+  async function copy(text, okMsg, btn) {
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const ta = h("textarea", { style: "position:fixed;opacity:0" }); ta.value = text; document.body.append(ta); ta.select();
+      let ok = false; try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+      if (!ok) { toast("Браузер не дал скопировать. Выделите текст вручную."); return; }
+    }
+    toast(okMsg);
+    if (btn) { const old = btn.textContent; btn.classList.add("done"); btn.textContent = "Скопировано"; setTimeout(() => { btn.classList.remove("done"); btn.textContent = old; }, 1500); }
+  }
+  let toastTimer;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2200); }
+  function autosize(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + 2 + "px"; }
+
+  function newsStatus(n) {
+    const s = [n.ru.status, n.kz.status];
+    if (s.includes("new")) return "pending";
+    if (s.every((x) => x === "rejected")) return "rejected";
+    if (s.every((x) => x === "approved")) return "approved";
+    return "approved"; // одна версия утверждена, другая отклонена
+  }
+
+  // ---------- отрисовка ----------
+  function visibleNews() {
+    const issues = state.issueSel === "all" ? state.issues : [state.issues.find((i) => i.id === state.issueSel) || state.issues[0]].filter(Boolean);
+    const rows = [];
+    issues.forEach((issue, ii) => issue.data.news.forEach((n, ni) => rows.push({ issue, n, order: ii * 100 + ni })));
+    rows.sort((a, b) => (Number(b.n.urgent) - Number(a.n.urgent)) || a.order - b.order);
+    return rows;
+  }
+
+  function render() {
+    // баннеры
+    const banners = [];
+    if (state.demo) banners.push(h("div", { class: "banner demo" },
+      h("span", { text: "Это пример. Чтобы видеть настоящие черновики, укажите репозиторий и токен GitHub." }),
+      h("button", { class: "btn", type: "button", onclick: openSettings, text: "Открыть настройки" })));
+    if (state.error) banners.push(h("div", { class: "banner err" }, h("span", { text: state.error }),
+      h("button", { class: "btn", type: "button", onclick: openSettings, text: "Настройки" })));
+    $("banners").replaceChildren(...banners);
+
+    // последний сбор
+    const lr = state.lastRun;
+    $("runInfo").textContent = lr ? `Последний сбор: ${fmtDate(lr.at)}\nпостов ${lr.posts}, новостей ${lr.news}` : "";
+    $("runInfo").style.whiteSpace = "pre-line";
+
+    // выпуски
+    const sel = $("issueSelect");
+    sel.replaceChildren(
+      ...state.issues.map((i, idx) => h("option", { value: idx === 0 ? "latest" : i.id, text: (idx === 0 ? "Последний: " : "") + issueLabel(i) })),
+      state.issues.length > 1 ? h("option", { value: "all", text: "Все выпуски за последние дни" }) : null,
+    );
+    const validSel = state.issueSel === "all" || state.issueSel === "latest" || state.issues.some((i) => i.id === state.issueSel);
+    if (!validSel) state.issueSel = "latest";
+    sel.value = state.issueSel;
+    sel.hidden = !state.issues.length;
+
+    const rowsAll = visibleNews();
+    const counts = { pending: 0, approved: 0, rejected: 0, all: rowsAll.length };
+    rowsAll.forEach((r) => counts[newsStatus(r.n)]++);
+    $("filterTabs").replaceChildren(...FILTERS.map(([key, label]) => h("button", {
+      class: "tab", type: "button", "aria-pressed": String(state.filter === key),
+      onclick: () => { state.filter = key; store.set("filter", key); render(); },
+    }, label, h("span", { class: "n", text: counts[key] }))));
+
+    const rows = rowsAll.filter((r) => state.filter === "all" || newsStatus(r.n) === state.filter);
+    const list = $("list");
+    if (!state.issues.length && !state.error) {
+      list.replaceChildren(h("div", { class: "empty" }, h("b", { text: "Выпусков пока нет" }),
+        "Агент собирает новости в 9:00, 14:00 и 19:00 по Астане. Можно запустить сбор вручную в настройках."));
+      return;
+    }
+    if (!rows.length) {
+      list.replaceChildren(h("div", { class: "empty" }, h("b", { text: state.filter === "pending" ? "Всё проверено" : "Здесь пусто" }),
+        state.filter === "pending" ? "Новых черновиков в этом выпуске нет." : "Попробуйте другой фильтр или выпуск."));
+      return;
+    }
+    list.replaceChildren(...rows.map(({ issue, n }) => card(issue, n)));
+    list.querySelectorAll("textarea").forEach(autosize);
+  }
+
+  function card(issue, n) {
+    const lang = state.lang[n.id] || (n.ru.status === "new" || n.kz.status !== "new" ? "ru" : "kz");
+    const v = n[lang];
+    const setLang = (l) => { state.lang[n.id] = l; render(); };
+    const setStatus = (s) => { v.status = s; markDirty(issue.id, n.id, lang); render(); };
+
+    const title = h("textarea", { class: "title", rows: "1", "aria-label": `Заголовок ${LANGS[lang]}`, id: `t-${n.id}-${lang}` });
+    title.value = v.title;
+    title.addEventListener("input", () => { v.title = title.value; autosize(title); markDirty(issue.id, n.id, lang); });
+    const text = h("textarea", { class: "text", rows: "6", "aria-label": `Текст ${LANGS[lang]}`, id: `x-${n.id}-${lang}` });
+    text.value = v.text;
+    text.addEventListener("input", () => { v.text = text.value; autosize(text); markDirty(issue.id, n.id, lang); });
+
+    const others = (n.sources || []).filter((s) => s.url !== v.sourceUrl);
+    const copyTitleBtn = h("button", { class: "btn primary", type: "button", text: "Скопировать заголовок" });
+    copyTitleBtn.addEventListener("click", () => copy(v.title.trim(), "Заголовок скопирован", copyTitleBtn));
+    const copyTextBtn = h("button", { class: "btn primary", type: "button", text: "Скопировать текст" });
+    copyTextBtn.addEventListener("click", () => copy(`${v.text.trim()}\n\n${sourceLine(n, lang)}`, "Текст с источником скопирован", copyTextBtn));
+
+    const statusBtns = v.status === "new"
+      ? [h("button", { class: "btn ok", type: "button", onclick: () => setStatus("approved"), text: `Утвердить ${LANGS[lang]}` }),
+         h("button", { class: "btn ghost", type: "button", onclick: () => setStatus("rejected"), text: "Отклонить" })]
+      : [h("button", { class: "btn ghost", type: "button", onclick: () => setStatus("new"), text: "Вернуть на проверку" })];
+
+    return h("article", { class: `card${n.urgent ? " is-urgent" : ""}${v.status === "rejected" ? " is-rejected" : ""}` },
+      n.urgent ? h("div", { class: "urgent-strip", text: "Срочно · чрезвычайная ситуация" }) : null,
+      h("div", { class: "card-head" },
+        h("span", { class: "agency", text: n.agency }),
+        h("time", { datetime: n.postDate, text: fmtDate(n.postDate) }),
+        n.topic && !n.urgent ? h("span", { class: "topic", text: TOPICS[n.topic] || n.topic }) : null,
+        h("div", { class: "langs", role: "group", "aria-label": "Язык" },
+          ...Object.keys(LANGS).map((l) => h("button", { type: "button", "aria-pressed": String(l === lang), onclick: () => setLang(l), title: STATUS[n[l].status] },
+            h("span", { class: `dot ${n[l].status}` }), LANGS[l])))),
+      h("div", { class: "body" },
+        h("div", { class: "flags" },
+          h("span", { class: `flag st-${v.status}`, text: `${LANGS[lang]}: ${STATUS[v.status]}` }),
+          v.translated ? h("span", { class: "flag tr", text: "Перевод агента — ведомство не публиковало эту версию" }) : null),
+        title, text,
+        h("div", { class: "source" }, `${lang === "kz" ? "Дереккөз" : "Источник"}: ${lang === "kz" ? (n.agencyKz || n.agency) : n.agency}, ${fmtDate(n.postDate, false)}, `,
+          h("a", { href: v.sourceUrl, target: "_blank", rel: "noopener", text: v.sourceUrl }),
+          others.length ? h("span", { text: ` · также: ` }) : null,
+          ...others.flatMap((s, i) => [i ? ", " : "", h("a", { href: s.url, target: "_blank", rel: "noopener", text: s.ref })])),
+        n.reason ? h("div", { class: "reason", text: `Почему отобрано: ${n.reason}` }) : null),
+      h("div", { class: "actions" }, copyTitleBtn, copyTextBtn, h("span", { class: "spacer" }), ...statusBtns));
+  }
+
+  // ---------- настройки и каналы ----------
+  function openSettings() {
+    $("setRepo").value = state.repo; $("setToken").value = state.token;
+    renderChannels();
+    $("settings").showModal();
+  }
+  function renderChannels() {
+    const box = $("channelsBox");
+    box.hidden = !state.channels;
+    if (!state.channels) return;
+    $("chRows").replaceChildren(...state.channels.map((c, i) => {
+      const cb = h("input", { type: "checkbox", id: `ch-${i}`, "aria-label": `Читать @${c.handle}` });
+      cb.checked = !!c.enabled;
+      cb.addEventListener("change", () => { c.enabled = cb.checked; });
+      return h("tr", {},
+        h("td", {}, cb),
+        h("td", { class: "h" }, h("a", { href: `https://t.me/s/${c.handle}`, target: "_blank", rel: "noopener", text: "@" + c.handle })),
+        h("td", {}, c.agency, c.confirmed === false ? h("span", { class: "unconf", text: "не подтверждён как официальный" }) : null),
+        h("td", {}, h("button", { class: "btn ghost", type: "button", text: "Убрать", onclick: () => { state.channels.splice(i, 1); renderChannels(); } })));
+    }));
+  }
+  $("chAdd").addEventListener("click", () => {
+    const handle = $("chHandle").value.trim().replace(/^https?:\/\/t\.me\/(s\/)?/, "").replace(/^@/, "").replace(/\/.*$/, "");
+    const agency = $("chAgency").value.trim();
+    if (!/^[A-Za-z0-9_]{4,}$/.test(handle)) { toast("Укажите имя канала латиницей, например KZgovernment"); return; }
+    if (!agency) { toast("Укажите название ведомства"); return; }
+    if (state.channels.some((c) => c.handle.toLowerCase() === handle.toLowerCase())) { toast("Этот канал уже в списке"); return; }
+    state.channels.push({ handle, agency, agencyKz: $("chAgencyKz").value.trim() || agency, enabled: true, confirmed: true });
+    $("chHandle").value = $("chAgency").value = $("chAgencyKz").value = "";
+    renderChannels();
+  });
+  $("chSave").addEventListener("click", async () => {
+    try {
+      state.channelsSha = await writeFile("channels.json", state.channels, state.channelsSha, "Редактор: список каналов");
+      toast("Список каналов сохранён");
+    } catch (e) { toast(e.status === 409 ? "Список изменился на сервере. Закройте настройки и обновите страницу." : explain(e)); }
+  });
+  $("runNow").addEventListener("click", async () => {
+    try {
+      await gh(`/actions/workflows/collect.yml/dispatches`, { method: "POST", body: JSON.stringify({ ref: "main" }) });
+      toast("Сбор запущен. Обновите страницу через несколько минут.");
+    } catch (e) { toast(explain(e)); }
+  });
+  $("saveSettings").addEventListener("click", () => {
+    state.repo = $("setRepo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, "");
+    state.token = $("setToken").value.trim();
+    store.set("repo", state.repo); store.set("token", state.token);
+    $("settings").close();
+    load();
+  });
+  $("openSettings").addEventListener("click", openSettings);
+  $("closeSettings").addEventListener("click", () => $("settings").close());
+  $("issueSelect").addEventListener("change", (e) => { state.issueSel = e.target.value; store.set("issueSel", state.issueSel); render(); });
+  window.addEventListener("resize", () => document.querySelectorAll("textarea").forEach(autosize));
+
+  load();
+})();
+</script>
+</body>
+</html>
