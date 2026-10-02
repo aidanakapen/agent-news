@@ -198,7 +198,7 @@ label.f input { border: 1px solid var(--line); border-radius: 8px; padding: 8px 
       <label class="f">Токен GitHub
         <input id="setToken" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
       </label>
-      <p class="hint">Токен хранится только в этом браузере. Нужен fine-grained токен с доступом к этому репозиторию: Contents — Read and write, Actions — Read and write.</p>
+      <p class="hint">Без токена сайт открывается в режиме просмотра. Токен хранится только в этом браузере. Нужен fine-grained токен с доступом к этому репозиторию: Contents — Read and write, Actions — Read and write.</p>
       <div class="row"><button class="btn primary" type="button" id="saveSettings">Сохранить и загрузить</button></div>
     </fieldset>
     <fieldset id="channelsBox">
@@ -287,7 +287,7 @@ label.f input { border: 1px solid var(--line); border-radius: 8px; padding: 8px 
       ...opts,
       headers: {
         Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${state.token}`,
+        ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
         "X-GitHub-Api-Version": "2022-11-28",
         ...(opts.body ? { "Content-Type": "application/json" } : {}),
       },
@@ -302,6 +302,12 @@ label.f input { border: 1px solid var(--line); border-radius: 8px; padding: 8px 
     return res.status === 204 ? null : res.json();
   }
   async function readFile(path) {
+    if (!state.token) {
+      // режим просмотра: публичный репозиторий читается без токена
+      const res = await fetch(`https://raw.githubusercontent.com/${state.repo}/${BRANCH}/${path}?t=${Date.now()}`);
+      if (!res.ok) { const err = new Error(`GitHub ${res.status}`); err.status = res.status; throw err; }
+      return { sha: null, data: await res.json() };
+    }
     const f = await gh(`/contents/${path}?ref=${BRANCH}`);
     return { sha: f.sha, data: JSON.parse(b64decode(f.content)) };
   }
@@ -322,7 +328,7 @@ label.f input { border: 1px solid var(--line); border-radius: 8px; padding: 8px 
   // ---------- загрузка ----------
   async function load() {
     state.error = "";
-    if (!state.repo || !state.token) { loadDemo(); return; }
+    if (!state.repo) { loadDemo(); return; }
     state.demo = false;
     $("list").replaceChildren(h("div", { class: "empty", text: "Загружаю выпуски…" }));
     try {
@@ -362,8 +368,14 @@ label.f input { border: 1px solid var(--line); border-radius: 8px; padding: 8px 
 
   // ---------- сохранение ----------
   let saveTimer = null;
+  let warnedReadonly = false;
   function markDirty(issueId, newsId, lang) {
     if (state.demo) return;
+    if (!state.token) {
+      if (!warnedReadonly) toast("Режим просмотра: правки не сохранятся. Добавьте токен в настройках.");
+      warnedReadonly = true;
+      return;
+    }
     if (!state.dirty.has(issueId)) state.dirty.set(issueId, new Set());
     state.dirty.get(issueId).add(`${newsId}|${lang}`);
     setSaveState("Есть несохранённые правки");
@@ -472,6 +484,11 @@ label.f input { border: 1px solid var(--line); border-radius: 8px; padding: 8px 
     if (state.demo) banners.push(h("div", { class: "banner demo" },
       h("span", { text: "Это пример. Чтобы видеть настоящие черновики, укажите репозиторий и токен GitHub." }),
       h("button", { class: "btn", type: "button", onclick: openSettings, text: "Открыть настройки" })));
+    if (!state.demo && !state.token && !state.error) banners.push(h("div", { class: "banner demo" },
+      h("span", { text: "Режим просмотра: правки и статусы не сохраняются. Чтобы работать с черновиками, добавьте токен GitHub." }),
+      h("button", { class: "btn", type: "button", onclick: openSettings, text: "Добавить токен" })));
+    if (state.issues.some((i) => i.data.mock)) banners.push(h("div", { class: "banner demo" },
+      h("span", { text: "Мокап: ключ Claude API ещё не добавлен. Новости отобраны по ключевым словам, тексты взяты из постов как есть. С ключом агент будет писать черновики сам." })));
     if (state.error) banners.push(h("div", { class: "banner err" }, h("span", { text: state.error }),
       h("button", { class: "btn", type: "button", onclick: openSettings, text: "Настройки" })));
     $("banners").replaceChildren(...banners);

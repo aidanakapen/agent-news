@@ -16,6 +16,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { fetchNewPosts } from "../collector/collect.mjs";
 import { SELECT_SYSTEM, DRAFT_SYSTEM } from "./prompts.mjs";
+import { mockSelect, mockDraft } from "./mock.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA_DIR = process.env.DATA_DIR ?? join(ROOT, "store");
@@ -25,7 +26,9 @@ const MAX_NEWS = 15;
 const RECENT_DAYS = 3;
 const ASTANA_OFFSET_H = 5;
 
-const client = new Anthropic();
+// Без ключа агент работает в мокап-режиме: отбор по ключевым словам, без Claude.
+const MOCK = !process.env.ANTHROPIC_API_KEY;
+let client;
 
 async function readJson(path, fallback) {
   try { return JSON.parse(await readFile(path, "utf8")); } catch { return fallback; }
@@ -59,6 +62,7 @@ const LangDraft = z.object({ title: z.string(), paragraphs: z.array(z.string()) 
 const Draft = z.object({ ru: LangDraft, kz: LangDraft });
 
 async function ask(system, user, schema) {
+  client ??= new Anthropic();
   const response = await client.beta.messages.parse({
     model: MODEL,
     max_tokens: 16000,
@@ -159,13 +163,14 @@ async function main() {
   const candidates = posts.filter((p) => p.text.trim().length >= 40);
   if (candidates.length) {
     const recent = await recentIssues();
-    const recentTitles = recent.flatMap((i) => i.news.map((n) => n.ru.title));
-    const recentRefs = new Set(recent.flatMap((i) => i.news.flatMap((n) => n.sources.map((s) => s.ref))));
+    const real = recent.filter((i) => !i.mock);
+    const recentTitles = real.flatMap((i) => i.news.map((n) => n.ru.title));
+    const recentRefs = new Set(real.flatMap((i) => i.news.flatMap((n) => n.sources.map((s) => s.ref))));
     const fresh = candidates.filter((p) => !recentRefs.has(p.ref));
     const byRef = new Map(fresh.map((p) => [p.ref, p]));
 
     const used = new Set();
-    const items = (fresh.length ? await select(fresh, recentTitles) : [])
+    const items = (!fresh.length ? [] : MOCK ? mockSelect(fresh) : await select(fresh, recentTitles))
       .filter((it) => byRef.has(it.primary_ref) && !used.has(it.primary_ref))
       .map((it) => {
         const refs = [...new Set([it.primary_ref, it.ru_ref, it.kz_ref, ...it.posts])].filter((r) => r && byRef.has(r) && !used.has(r));
@@ -182,7 +187,7 @@ async function main() {
     console.log(`Отобрано новостей: ${items.length}`);
 
     for (const [i, it] of items.entries()) {
-      const d = await draft(it, byRef);
+      const d = MOCK ? mockDraft(it, byRef) : await draft(it, byRef);
       const primary = byRef.get(it.primary_ref);
       const lang = (ref, text) => ({
         title: text.title.trim(),
@@ -214,15 +219,17 @@ async function main() {
       day: now.day,
       time: now.time,
       createdAt: new Date().toISOString(),
-      model: MODEL,
+      model: MOCK ? "mock" : MODEL,
+      mock: MOCK,
       stats: { posts: posts.length, news: news.length, errors },
       news,
     });
   }
 
   // Состояние сдвигаем только после успешной записи выпуска.
-  for (const p of posts) state.lastIds[p.channel] = Math.max(state.lastIds[p.channel] ?? 0, p.id);
-  state.lastRun = { at: new Date().toISOString(), day: now.day, time: now.time, posts: posts.length, news: news.length, issue: news.length ? issueId : null, errors };
+  // В мокапе не сдвигаем: когда появится ключ, Claude обработает эти же посты.
+  if (!MOCK) for (const p of posts) state.lastIds[p.channel] = Math.max(state.lastIds[p.channel] ?? 0, p.id);
+  state.lastRun = { mock: MOCK, at: new Date().toISOString(), day: now.day, time: now.time, posts: posts.length, news: news.length, issue: news.length ? issueId : null, errors };
   await writeJson(join(DATA_DIR, "state.json"), state);
   console.log(news.length ? `Выпуск ${issueId}: ${news.length} новостей` : "Новых важных новостей нет");
 }
