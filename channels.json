@@ -1,0 +1,79 @@
+[
+  {
+    "handle": "KZgovernment",
+    "agency": "Правительство РК",
+    "agencyKz": "ҚР Үкіметі",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "aqorda_resmi",
+    "agency": "Президент РК (Акорда)",
+    "agencyKz": "ҚР Президенті (Ақорда)",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "qr_tjm",
+    "agency": "Министерство по чрезвычайным ситуациям",
+    "agencyKz": "Төтенше жағдайлар министрлігі",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "POLICE_of_KZ",
+    "agency": "Министерство внутренних дел",
+    "agencyKz": "Ішкі істер министрлігі",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "pressmfakz",
+    "agency": "Министерство иностранных дел",
+    "agencyKz": "Сыртқы істер министрлігі",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "presseconomy",
+    "agency": "Министерство национальной экономики",
+    "agencyKz": "Ұлттық экономика министрлігі",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "oqu_agartu",
+    "agency": "Министерство просвещения",
+    "agencyKz": "Оқу-ағарту министрлігі",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "gylym_jogary_bilim",
+    "agency": "Министерство науки и высшего образования",
+    "agencyKz": "Ғылым және жоғары білім министрлігі",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "modgovkz",
+    "agency": "Министерство обороны",
+    "agencyKz": "Қорғаныс министрлігі",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "kgdmfrk",
+    "agency": "Комитет государственных доходов Минфина",
+    "agencyKz": "Қаржы министрлігінің Мемлекеттік кірістер комитеті",
+    "enabled": true,
+    "confirmed": true
+  },
+  {
+    "handle": "EcologyofQazaqstan",
+    "agency": "Министерство экологии и природных ресурсов",
+    "agencyKz": "Экология және табиғи ресурстар министрлігі",
+    "enabled": false,
+    "confirmed": false
+  }
+]
